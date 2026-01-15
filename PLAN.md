@@ -395,7 +395,7 @@ function renderHeatmap(heatmapData, container) {
 ## 8. Future Enhancements (Post-MVP)
 
 1. **Day-of-Week Breakdown**: Show weekday vs weekend patterns
-2. **Date Range Filter**: Limit heatmap to specific date range
+2. ~~**Date Range Filter**: Limit heatmap to specific date range~~ ✅ Implemented
 3. **Export as Image**: Download heatmap as PNG
 4. **Prediction Mode**: Highlight "what's likely happening now"
 5. **Statistics Panel**: Show averages (avg sleep duration, feeds per day)

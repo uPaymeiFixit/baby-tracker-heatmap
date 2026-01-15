@@ -23,7 +23,11 @@ const App = (function() {
       bottle: true,
       diaper: true
     },
-    loadedFiles: []
+    loadedFiles: [],
+    dateFilter: {
+      start: null,  // Date object or null for no filter
+      end: null     // Date object or null for no filter
+    }
   };
 
   // DOM elements
@@ -38,6 +42,10 @@ const App = (function() {
       fileInput: document.getElementById('file-input'),
       clearBtn: document.getElementById('clear-btn'),
       dataSummary: document.getElementById('data-summary'),
+      dateFilterSection: document.getElementById('date-filter-section'),
+      dateStart: document.getElementById('date-start'),
+      dateEnd: document.getElementById('date-end'),
+      resetDatesBtn: document.getElementById('reset-dates-btn'),
       togglesSection: document.getElementById('toggles-section'),
       heatmapSection: document.getElementById('heatmap-section'),
       heatmapContainer: document.getElementById('heatmap-container'),
@@ -48,6 +56,11 @@ const App = (function() {
     // Bind event listeners
     elements.fileInput.addEventListener('change', handleFileUpload);
     elements.clearBtn.addEventListener('click', handleClear);
+
+    // Bind date filter listeners
+    elements.dateStart.addEventListener('change', handleDateFilterChange);
+    elements.dateEnd.addEventListener('change', handleDateFilterChange);
+    elements.resetDatesBtn.addEventListener('click', handleResetDates);
 
     // Bind toggle listeners
     const toggleItems = document.querySelectorAll('.toggle-item input[type="checkbox"]');
@@ -84,8 +97,12 @@ const App = (function() {
         }
       }
 
-      // Recalculate heatmap
-      state.heatmapData = Heatmap.calculateAllHeatmaps(state.activities);
+      // Initialize date filter with bounds and default to last 30 days
+      initializeDateFilter();
+
+      // Recalculate heatmap with filtered data
+      const filteredActivities = getFilteredActivities();
+      state.heatmapData = Heatmap.calculateAllHeatmaps(filteredActivities);
 
       // Update UI
       updateDataSummary();
@@ -127,6 +144,18 @@ const App = (function() {
       diaper: true
     };
 
+    // Reset date filter
+    state.dateFilter = {
+      start: null,
+      end: null
+    };
+    elements.dateStart.value = '';
+    elements.dateEnd.value = '';
+    elements.dateStart.min = '';
+    elements.dateStart.max = '';
+    elements.dateEnd.min = '';
+    elements.dateEnd.max = '';
+
     // Reset toggle checkboxes
     const toggleItems = document.querySelectorAll('.toggle-item input[type="checkbox"]');
     toggleItems.forEach(checkbox => {
@@ -148,6 +177,174 @@ const App = (function() {
     const toggleItem = event.target.closest('.toggle-item');
     const activityType = toggleItem.dataset.activity;
     state.visibility[activityType] = event.target.checked;
+    renderHeatmap();
+  }
+
+  /**
+   * Handle date filter change
+   */
+  function handleDateFilterChange() {
+    const startValue = elements.dateStart.value;
+    const endValue = elements.dateEnd.value;
+
+    // Parse dates (input value is YYYY-MM-DD format)
+    state.dateFilter.start = startValue ? new Date(startValue + 'T00:00:00') : null;
+    state.dateFilter.end = endValue ? new Date(endValue + 'T23:59:59') : null;
+
+    // Recalculate heatmap with filtered data
+    recalculateHeatmap();
+  }
+
+  /**
+   * Handle reset dates button click
+   */
+  function handleResetDates() {
+    // Reset to default (last 30 days)
+    setDefaultDateFilter();
+    recalculateHeatmap();
+  }
+
+  /**
+   * Set the default date filter (last 30 days)
+   */
+  function setDefaultDateFilter() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    // Set state
+    state.dateFilter.start = thirtyDaysAgo;
+    state.dateFilter.end = today;
+
+    // Update input values (YYYY-MM-DD format)
+    elements.dateStart.value = formatDateForInput(thirtyDaysAgo);
+    elements.dateEnd.value = formatDateForInput(today);
+  }
+
+  /**
+   * Initialize date filter inputs with data range bounds
+   */
+  function initializeDateFilter() {
+    // Get the full date range from all activities
+    const allDates = getAllActivityDates();
+    if (allDates.length === 0) return;
+
+    const minDate = new Date(Math.min(...allDates));
+    const maxDate = new Date(Math.max(...allDates));
+
+    // Set min/max attributes on date inputs
+    elements.dateStart.min = formatDateForInput(minDate);
+    elements.dateStart.max = formatDateForInput(maxDate);
+    elements.dateEnd.min = formatDateForInput(minDate);
+    elements.dateEnd.max = formatDateForInput(maxDate);
+
+    // Set default filter (last 30 days or data start if less than 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    // Use the later of: 30 days ago, or the earliest date in data
+    const filterStart = thirtyDaysAgo > minDate ? thirtyDaysAgo : minDate;
+    // Use the earlier of: today, or the latest date in data
+    const filterEnd = today < maxDate ? today : maxDate;
+
+    state.dateFilter.start = filterStart;
+    state.dateFilter.end = filterEnd;
+
+    elements.dateStart.value = formatDateForInput(filterStart);
+    elements.dateEnd.value = formatDateForInput(filterEnd);
+  }
+
+  /**
+   * Get all dates from all activities
+   * @returns {Array} - Array of Date timestamps
+   */
+  function getAllActivityDates() {
+    const dates = [];
+    const durationTypes = ['sleep', 'nursing', 'pumping'];
+    const instantTypes = ['bottle', 'diaper'];
+
+    for (const type of durationTypes) {
+      for (const activity of state.activities[type]) {
+        dates.push(activity.start.getTime());
+      }
+    }
+
+    for (const type of instantTypes) {
+      for (const activity of state.activities[type]) {
+        dates.push(activity.time.getTime());
+      }
+    }
+
+    return dates;
+  }
+
+  /**
+   * Format a Date object for date input (YYYY-MM-DD)
+   * @param {Date} date - The date to format
+   * @returns {string} - Formatted date string
+   */
+  function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Filter activities by the current date range
+   * @returns {Object} - Filtered activities object
+   */
+  function getFilteredActivities() {
+    const { start, end } = state.dateFilter;
+
+    // If no filter is set, return all activities
+    if (!start && !end) {
+      return state.activities;
+    }
+
+    const filtered = {
+      sleep: [],
+      nursing: [],
+      pumping: [],
+      bottle: [],
+      diaper: []
+    };
+
+    const durationTypes = ['sleep', 'nursing', 'pumping'];
+    const instantTypes = ['bottle', 'diaper'];
+
+    // Filter duration-based activities
+    for (const type of durationTypes) {
+      filtered[type] = state.activities[type].filter(activity => {
+        const activityDate = activity.start;
+        if (start && activityDate < start) return false;
+        if (end && activityDate > end) return false;
+        return true;
+      });
+    }
+
+    // Filter instant events
+    for (const type of instantTypes) {
+      filtered[type] = state.activities[type].filter(activity => {
+        const activityDate = activity.time;
+        if (start && activityDate < start) return false;
+        if (end && activityDate > end) return false;
+        return true;
+      });
+    }
+
+    return filtered;
+  }
+
+  /**
+   * Recalculate heatmap with current filters
+   */
+  function recalculateHeatmap() {
+    const filteredActivities = getFilteredActivities();
+    state.heatmapData = Heatmap.calculateAllHeatmaps(filteredActivities);
+    updateDataSummary();
+    updateToggleCounts();
     renderHeatmap();
   }
 
@@ -177,15 +374,16 @@ const App = (function() {
   }
 
   /**
-   * Update toggle item counts
+   * Update toggle item counts (shows filtered count)
    */
   function updateToggleCounts() {
     const toggleItems = document.querySelectorAll('.toggle-item');
+    const filteredActivities = getFilteredActivities();
 
     toggleItems.forEach(item => {
       const activityType = item.dataset.activity;
       const countSpan = item.querySelector('.toggle-count');
-      const activities = state.activities[activityType];
+      const activities = filteredActivities[activityType];
       const count = activities ? activities.length : 0;
 
       if (count > 0) {
@@ -204,9 +402,11 @@ const App = (function() {
    */
   function showSections(show) {
     if (show) {
+      elements.dateFilterSection.classList.remove('hidden');
       elements.togglesSection.classList.remove('hidden');
       elements.heatmapSection.classList.remove('hidden');
     } else {
+      elements.dateFilterSection.classList.add('hidden');
       elements.togglesSection.classList.add('hidden');
       elements.heatmapSection.classList.add('hidden');
     }

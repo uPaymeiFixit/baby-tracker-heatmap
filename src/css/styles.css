@@ -167,6 +167,72 @@ body {
   color: var(--color-text);
 }
 
+/* Date Filter Section */
+.date-filter-section {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius);
+}
+
+.date-filter-section h2 {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-md);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.date-input-group label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+.date-input-group input[type="date"] {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+.date-input-group input[type="date"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.reset-dates-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: transparent;
+  color: var(--color-text-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-dates-btn:hover {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
 /* Toggle Section */
 .toggles-section {
   margin-bottom: var(--spacing-lg);
@@ -408,6 +474,23 @@ body {
 
   .upload-btn,
   .clear-btn {
+    width: 100%;
+  }
+
+  .date-filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-input-group {
+    justify-content: space-between;
+  }
+
+  .date-input-group input[type="date"] {
+    flex: 1;
+  }
+
+  .reset-dates-btn {
     width: 100%;
   }
 
