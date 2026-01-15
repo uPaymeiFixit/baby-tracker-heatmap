@@ -48,6 +48,7 @@ const App = (function() {
       clearBtn: document.getElementById('clear-btn'),
       dataSummary: document.getElementById('data-summary'),
       gettingStarted: document.getElementById('getting-started'),
+      privacyNotice: document.getElementById('privacy-notice'),
       dateFilterSection: document.getElementById('date-filter-section'),
       dateStart: document.getElementById('date-start'),
       dateEnd: document.getElementById('date-end'),
@@ -529,6 +530,9 @@ const App = (function() {
       if (elements.gettingStarted) {
         elements.gettingStarted.classList.add('hidden');
       }
+      if (elements.privacyNotice) {
+        elements.privacyNotice.classList.add('hidden');
+      }
       elements.loadExampleBtn.disabled = true;
     } else {
       elements.dateFilterSection.classList.add('hidden');
@@ -536,6 +540,9 @@ const App = (function() {
       elements.heatmapSection.classList.add('hidden');
       if (elements.gettingStarted) {
         elements.gettingStarted.classList.remove('hidden');
+      }
+      if (elements.privacyNotice) {
+        elements.privacyNotice.classList.remove('hidden');
       }
       elements.loadExampleBtn.disabled = false;
     }
