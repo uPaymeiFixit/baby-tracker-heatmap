@@ -8,24 +8,24 @@ A static single-page web application that visualizes Baby Tracker CSV data as a 
 
 ## 1. CSV Data Formats (Actual Baby Tracker Export)
 
-### Sleep (`Penelope_sleep.csv`)
+### Sleep (`sleep.csv`)
 
 ```csv
 Baby,Time,Duration(minutes),Note
-Penelope,"1/13/26, 19:54",660
-Penelope,"1/13/26, 12:09",101
+Baby,"1/13/26, 19:54",660
+Baby,"1/13/26, 12:09",101
 ```
 
 - **Time**: Start time of sleep (M/D/YY, HH:MM format)
 - **Duration**: Length in minutes
 - **Key insight**: Night sleep ~600-700 min (10-11 hrs), naps ~60-150 min
 
-### Nursing (`Penelope_nursing.csv`)
+### Nursing (`nursing.csv`)
 
 ```csv
 Baby,Time,Start Side,Left duration (min),Right duration (min),Total Duration (min),Note
-Penelope,"5/14/25, 10:53",Right,,59,59
-Penelope,"4/29/25, 09:29",Left,36,8,44
+Baby,"5/14/25, 10:53",Right,,59,59
+Baby,"4/29/25, 09:29",Left,36,8,44
 ```
 
 - **Time**: Start time of nursing session
@@ -41,21 +41,21 @@ Time,Start Side,Left duration (min),Right duration (min),Total Duration (min),Le
 - **Time**: Start time
 - **Total Duration (min)**: Duration for heatmap
 
-### Expressed/Bottle (`Penelope_expressed.csv`)
+### Expressed/Bottle (`expressed.csv`)
 
 ```csv
 Baby,Time,Amount (oz.),Note
-Penelope,"2/3/25, 08:38",0.6
+Baby,"2/3/25, 08:38",0.6
 ```
 
 - **Time**: Feeding time (instant event, not duration-based)
 - Could use a fixed duration (e.g., 15-20 min) or treat as point event
 
-### Diaper (`Penelope_diaper.csv`)
+### Diaper (`diaper.csv`)
 
 ```csv
 Baby,Time,Status,Note
-Penelope,"1/13/26, 15:58",Mixed,Medium
+Baby,"1/13/26, 15:58",Mixed
 ```
 
 - **Time**: Change time (instant event)
