@@ -777,8 +777,8 @@ const App = (function() {
       const sleepStats = calculateSleepStats(filteredActivities.sleep);
       statsHtml.push(createStatCard('Sleep', Heatmap.ACTIVITY_COLORS.sleep, [
         { label: 'Total sessions', value: sleepStats.totalSessions },
-        { label: 'Avg duration', value: formatDuration(sleepStats.avgDuration) },
-        { label: 'Per day', value: sleepStats.perDay.toFixed(1) }
+        { label: 'Avg nap duration', value: sleepStats.napCount > 0 ? formatDuration(sleepStats.avgNapDuration) : 'N/A' },
+        { label: 'Avg night duration', value: sleepStats.nightCount > 0 ? formatDuration(sleepStats.avgNightDuration) : 'N/A' }
       ]));
     }
 
@@ -848,15 +848,44 @@ const App = (function() {
 
   /**
    * Calculate sleep statistics
+   * Separates naps (daytime: starts after 8:00 and ends before 19:30) from nighttime sleep
    */
   function calculateSleepStats(activities) {
-    const totalDuration = activities.reduce((sum, a) => sum + a.durationMinutes, 0);
-    const uniqueDays = new Set(activities.map(a => getDateStr(a.start))).size;
+    // Separate naps from nighttime sleep
+    const naps = [];
+    const nightSleep = [];
+
+    for (const activity of activities) {
+      const startHour = activity.start.getHours();
+      const startMinute = activity.start.getMinutes();
+      const startMinutes = startHour * 60 + startMinute; // Minutes since midnight
+
+      // Calculate end time
+      const endDate = new Date(activity.start.getTime() + activity.durationMinutes * 60000);
+      const endHour = endDate.getHours();
+      const endMinute = endDate.getMinutes();
+      const endMinutes = endHour * 60 + endMinute; // Minutes since midnight
+
+      // Nap: starts after 8:00 (480 min) AND ends before 19:30 (1170 min)
+      // Also must not span midnight (end is on same day or later day but still before 19:30)
+      const isNap = startMinutes >= 480 && endMinutes < 1170 && endMinutes > startMinutes;
+
+      if (isNap) {
+        naps.push(activity);
+      } else {
+        nightSleep.push(activity);
+      }
+    }
+
+    const napDuration = naps.reduce((sum, a) => sum + a.durationMinutes, 0);
+    const nightDuration = nightSleep.reduce((sum, a) => sum + a.durationMinutes, 0);
 
     return {
       totalSessions: activities.length,
-      avgDuration: activities.length > 0 ? totalDuration / activities.length : 0,
-      perDay: uniqueDays > 0 ? activities.length / uniqueDays : 0
+      avgNapDuration: naps.length > 0 ? napDuration / naps.length : 0,
+      avgNightDuration: nightSleep.length > 0 ? nightDuration / nightSleep.length : 0,
+      napCount: naps.length,
+      nightCount: nightSleep.length
     };
   }
 
