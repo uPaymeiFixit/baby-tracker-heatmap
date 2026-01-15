@@ -167,6 +167,79 @@ body {
   color: var(--color-text);
 }
 
+/* Getting Started Section */
+.getting-started {
+  text-align: center;
+  padding: var(--spacing-md);
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius);
+  margin-top: var(--spacing-md);
+}
+
+.getting-started h3 {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--spacing-sm);
+}
+
+.getting-started p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+.getting-started a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.getting-started a:hover {
+  text-decoration: underline;
+}
+
+/* Privacy Notice */
+.privacy-notice {
+  text-align: center;
+  padding: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.privacy-notice p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+.privacy-notice a {
+  color: var(--color-text-light);
+  text-decoration: underline;
+}
+
+.privacy-notice a:hover {
+  color: var(--color-text);
+}
+
+/* Example Data Button */
+.example-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.example-btn:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.example-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Date Filter Section */
 .date-filter-section {
   margin-bottom: var(--spacing-lg);

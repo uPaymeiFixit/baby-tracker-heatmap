@@ -256,11 +256,63 @@ const Parser = (function() {
     return Promise.all(promises);
   }
 
+  /**
+   * Parse CSV text directly (for loading example data)
+   * @param {string} csvText - The CSV content as text
+   * @param {string} filename - The filename to detect activity type
+   * @returns {Object} - { type, activities, filename, rowCount, parsedCount }
+   */
+  function parseCSVText(csvText, filename) {
+    const activityType = detectActivityType(filename);
+
+    if (!activityType) {
+      throw new Error(`Unknown file type: ${filename}`);
+    }
+
+    const results = Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true
+    });
+
+    if (results.errors.length > 0) {
+      console.warn(`Parse warnings for ${filename}:`, results.errors);
+    }
+
+    let activities = [];
+
+    switch (activityType) {
+      case 'sleep':
+        activities = parseSleep(results.data);
+        break;
+      case 'nursing':
+        activities = parseNursing(results.data);
+        break;
+      case 'pumping':
+        activities = parsePumping(results.data);
+        break;
+      case 'bottle':
+        activities = parseBottle(results.data);
+        break;
+      case 'diaper':
+        activities = parseDiaper(results.data);
+        break;
+    }
+
+    return {
+      type: activityType,
+      activities: activities,
+      filename: filename,
+      rowCount: results.data.length,
+      parsedCount: activities.length
+    };
+  }
+
   // Public API
   return {
     detectActivityType,
     parseDateTime,
     parseFile,
-    parseFiles
+    parseFiles,
+    parseCSVText
   };
 })();

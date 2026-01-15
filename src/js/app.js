@@ -33,6 +33,10 @@ const App = (function() {
   // DOM elements
   let elements = {};
 
+  // Example data file URLs
+  const EXAMPLE_DATA_BASE_URL = 'https://raw.githubusercontent.com/uPaymeiFixit/baby-tracker-heatmap/refs/heads/main/example_export/';
+  const EXAMPLE_FILES = ['diaper.csv', 'expressed.csv', 'nursing.csv', 'pump.csv', 'sleep.csv'];
+
   /**
    * Initialize the application
    */
@@ -40,8 +44,10 @@ const App = (function() {
     // Cache DOM elements
     elements = {
       fileInput: document.getElementById('file-input'),
+      loadExampleBtn: document.getElementById('load-example-btn'),
       clearBtn: document.getElementById('clear-btn'),
       dataSummary: document.getElementById('data-summary'),
+      gettingStarted: document.getElementById('getting-started'),
       dateFilterSection: document.getElementById('date-filter-section'),
       dateStart: document.getElementById('date-start'),
       dateEnd: document.getElementById('date-end'),
@@ -55,6 +61,7 @@ const App = (function() {
 
     // Bind event listeners
     elements.fileInput.addEventListener('change', handleFileUpload);
+    elements.loadExampleBtn.addEventListener('click', handleLoadExample);
     elements.clearBtn.addEventListener('click', handleClear);
 
     // Bind date filter listeners
@@ -117,6 +124,60 @@ const App = (function() {
       showLoading(false);
       // Reset file input so same file can be re-selected
       event.target.value = '';
+    }
+  }
+
+  /**
+   * Handle loading example data from GitHub
+   */
+  async function handleLoadExample() {
+    showLoading(true);
+
+    try {
+      // Fetch all example CSV files
+      const fetchPromises = EXAMPLE_FILES.map(async filename => {
+        const url = EXAMPLE_DATA_BASE_URL + filename;
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${filename}`);
+        }
+        const text = await response.text();
+        return { filename, text };
+      });
+
+      const csvFiles = await Promise.all(fetchPromises);
+
+      // Parse each CSV file
+      for (const { filename, text } of csvFiles) {
+        const result = Parser.parseCSVText(text, filename);
+        if (result.activities.length > 0) {
+          state.activities[result.type].push(...result.activities);
+          state.loadedFiles.push({
+            name: result.filename,
+            type: result.type,
+            count: result.parsedCount
+          });
+        }
+      }
+
+      // Initialize date filter with bounds and default to last 30 days
+      initializeDateFilter();
+
+      // Recalculate heatmap with filtered data
+      const filteredActivities = getFilteredActivities();
+      state.heatmapData = Heatmap.calculateAllHeatmaps(filteredActivities);
+
+      // Update UI
+      updateDataSummary();
+      updateToggleCounts();
+      renderHeatmap();
+      showSections(true);
+
+    } catch (error) {
+      console.error('Error loading example data:', error);
+      alert(`Error loading example data: ${error.message}`);
+    } finally {
+      showLoading(false);
     }
   }
 
@@ -405,10 +466,18 @@ const App = (function() {
       elements.dateFilterSection.classList.remove('hidden');
       elements.togglesSection.classList.remove('hidden');
       elements.heatmapSection.classList.remove('hidden');
+      if (elements.gettingStarted) {
+        elements.gettingStarted.classList.add('hidden');
+      }
+      elements.loadExampleBtn.disabled = true;
     } else {
       elements.dateFilterSection.classList.add('hidden');
       elements.togglesSection.classList.add('hidden');
       elements.heatmapSection.classList.add('hidden');
+      if (elements.gettingStarted) {
+        elements.gettingStarted.classList.remove('hidden');
+      }
+      elements.loadExampleBtn.disabled = false;
     }
   }
 
