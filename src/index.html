@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Baby Activity Heatmap</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -19,7 +20,7 @@
     <section class="upload-section">
       <div class="upload-controls">
         <label class="upload-btn">
-          <input type="file" id="file-input" multiple accept=".csv">
+          <input type="file" id="file-input" multiple accept=".csv,.zip">
           Choose CSV Files
         </label>
         <button id="load-example-btn" class="example-btn">Load Example Data</button>

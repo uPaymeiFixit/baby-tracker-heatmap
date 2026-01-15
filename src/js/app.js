@@ -90,17 +90,50 @@ const App = (function() {
     showLoading(true);
 
     try {
-      const results = await Parser.parseFiles(files);
+      // Separate zip files from CSV files
+      const zipFiles = [];
+      const csvFiles = [];
 
-      // Merge results into state
-      for (const result of results) {
-        if (result.activities.length > 0) {
-          state.activities[result.type].push(...result.activities);
-          state.loadedFiles.push({
-            name: result.filename,
-            type: result.type,
-            count: result.parsedCount
-          });
+      for (const file of files) {
+        if (file.name.toLowerCase().endsWith('.zip')) {
+          zipFiles.push(file);
+        } else {
+          csvFiles.push(file);
+        }
+      }
+
+      // Extract CSVs from zip files
+      const extractedCsvs = await extractCsvsFromZips(zipFiles);
+
+      // Parse regular CSV files
+      if (csvFiles.length > 0) {
+        const results = await Parser.parseFiles(csvFiles);
+        for (const result of results) {
+          if (result.activities.length > 0) {
+            state.activities[result.type].push(...result.activities);
+            state.loadedFiles.push({
+              name: result.filename,
+              type: result.type,
+              count: result.parsedCount
+            });
+          }
+        }
+      }
+
+      // Parse extracted CSV text from zip files
+      for (const { filename, text } of extractedCsvs) {
+        try {
+          const result = Parser.parseCSVText(text, filename);
+          if (result.activities.length > 0) {
+            state.activities[result.type].push(...result.activities);
+            state.loadedFiles.push({
+              name: result.filename,
+              type: result.type,
+              count: result.parsedCount
+            });
+          }
+        } catch (e) {
+          console.warn(`Skipping ${filename}: ${e.message}`);
         }
       }
 
@@ -125,6 +158,33 @@ const App = (function() {
       // Reset file input so same file can be re-selected
       event.target.value = '';
     }
+  }
+
+  /**
+   * Extract CSV files from zip archives
+   * @param {Array} zipFiles - Array of zip File objects
+   * @returns {Promise<Array>} - Array of { filename, text } objects
+   */
+  async function extractCsvsFromZips(zipFiles) {
+    const extractedCsvs = [];
+
+    for (const zipFile of zipFiles) {
+      const arrayBuffer = await zipFile.arrayBuffer();
+      const zip = await JSZip.loadAsync(arrayBuffer);
+
+      for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
+        // Skip directories and non-CSV files
+        if (zipEntry.dir) continue;
+        if (!relativePath.toLowerCase().endsWith('.csv')) continue;
+
+        const text = await zipEntry.async('string');
+        // Use just the filename, not the full path
+        const filename = relativePath.split('/').pop();
+        extractedCsvs.push({ filename, text });
+      }
+    }
+
+    return extractedCsvs;
   }
 
   /**
