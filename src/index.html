@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baby Activity Heatmap</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <h1>Baby Activity Heatmap</h1>
+      <p class="subtitle">Predictive patterns from your Baby Tracker data</p>
+    </header>
+
+    <!-- Upload Section -->
+    <section class="upload-section">
+      <div class="upload-controls">
+        <label class="upload-btn">
+          <input type="file" id="file-input" multiple accept=".csv">
+          Choose CSV Files
+        </label>
+        <button id="clear-btn" class="clear-btn" disabled>Clear All</button>
+      </div>
+      <div id="data-summary" class="data-summary">
+        <p>No data loaded. Upload Baby Tracker CSV exports to get started.</p>
+      </div>
+    </section>
+
+    <!-- Activity Toggles -->
+    <section id="toggles-section" class="toggles-section hidden">
+      <h2>Activity Layers</h2>
+      <div class="toggle-controls">
+        <label class="toggle-item" data-activity="sleep">
+          <input type="checkbox" checked>
+          <span class="toggle-color" style="background-color: #66BB6A;"></span>
+          <span class="toggle-label">Sleep</span>
+          <span class="toggle-count"></span>
+        </label>
+        <label class="toggle-item" data-activity="nursing">
+          <input type="checkbox" checked>
+          <span class="toggle-color" style="background-color: #F48FB1;"></span>
+          <span class="toggle-label">Nursing</span>
+          <span class="toggle-count"></span>
+        </label>
+        <label class="toggle-item" data-activity="pumping">
+          <input type="checkbox" checked>
+          <span class="toggle-color" style="background-color: #CE93D8;"></span>
+          <span class="toggle-label">Pumping</span>
+          <span class="toggle-count"></span>
+        </label>
+        <label class="toggle-item" data-activity="bottle">
+          <input type="checkbox" checked>
+          <span class="toggle-color" style="background-color: #64B5F6;"></span>
+          <span class="toggle-label">Bottle</span>
+          <span class="toggle-count"></span>
+        </label>
+        <label class="toggle-item" data-activity="diaper">
+          <input type="checkbox" checked>
+          <span class="toggle-color" style="background-color: #FFB74D;"></span>
+          <span class="toggle-label">Diaper</span>
+          <span class="toggle-count"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Heatmap Container -->
+    <section id="heatmap-section" class="heatmap-section hidden">
+      <div class="heatmap-header">
+        <span class="heatmap-legend-label">Less likely</span>
+        <div class="heatmap-legend">
+          <div class="legend-gradient"></div>
+        </div>
+        <span class="heatmap-legend-label">More likely</span>
+      </div>
+      <div id="heatmap-container" class="heatmap-container">
+        <!-- SVG will be rendered here -->
+      </div>
+      <div id="tooltip" class="tooltip hidden"></div>
+    </section>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Processing data...</p>
+    </div>
+  </div>
+
+  <script src="js/parser.js"></script>
+  <script src="js/heatmap.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
