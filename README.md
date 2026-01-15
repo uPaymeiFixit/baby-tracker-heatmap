@@ -2,7 +2,7 @@
 
 A simple tool to visualize sleep and activity patterns as heatmaps from [Baby Tracker](https://babytrackers.com/) CSV exports.
 
-![Screenshot](screenshot.jpeg)
+![Screenshot](https://github.com/user-attachments/assets/5270a08d-41dc-4106-8c04-d5595c5f37b4)
 
 ## Features
 
@@ -24,3 +24,4 @@ No build tools required. Just open `src/index.html` in a browser.
 ## Privacy
 
 This is a static page that makes no network calls. Your data stays on your device.
+
