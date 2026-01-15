@@ -296,11 +296,12 @@ const Heatmap = (function() {
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-    // Background
+    // Background - use media query for dark mode support
+    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     bg.setAttribute('width', width);
     bg.setAttribute('height', height);
-    bg.setAttribute('fill', '#FFFFFF');
+    bg.setAttribute('fill', isDarkMode ? '#1E1E1E' : '#FFFFFF');
     svg.appendChild(bg);
 
     // Create group for chart content
@@ -321,6 +322,7 @@ const Heatmap = (function() {
       label.setAttribute('y', y + rowHeight / 2 + 4);
       label.setAttribute('text-anchor', 'end');
       label.setAttribute('class', 'hour-label');
+      label.setAttribute('fill', isDarkMode ? '#A0A0A0' : '#757575');
       label.textContent = `${String(hour).padStart(2, '0')}:00`;
       chartGroup.appendChild(label);
 
@@ -331,6 +333,7 @@ const Heatmap = (function() {
       gridLine.setAttribute('x2', chartWidth);
       gridLine.setAttribute('y2', y);
       gridLine.setAttribute('class', 'hour-grid-line');
+      gridLine.setAttribute('stroke', isDarkMode ? '#404040' : '#E0E0E0');
       chartGroup.appendChild(gridLine);
     }
 
@@ -341,6 +344,7 @@ const Heatmap = (function() {
     bottomLine.setAttribute('x2', chartWidth);
     bottomLine.setAttribute('y2', 24 * rowHeight);
     bottomLine.setAttribute('class', 'hour-grid-line');
+    bottomLine.setAttribute('stroke', isDarkMode ? '#404040' : '#E0E0E0');
     chartGroup.appendChild(bottomLine);
 
     // Draw activity bars for each visible type

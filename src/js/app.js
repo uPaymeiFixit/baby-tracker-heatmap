@@ -57,7 +57,12 @@ const App = (function() {
       heatmapSection: document.getElementById('heatmap-section'),
       heatmapContainer: document.getElementById('heatmap-container'),
       tooltip: document.getElementById('tooltip'),
-      loading: document.getElementById('loading')
+      loading: document.getElementById('loading'),
+      predictionSection: document.getElementById('prediction-section'),
+      predictionTime: document.getElementById('prediction-time'),
+      predictionContent: document.getElementById('prediction-content'),
+      statisticsSection: document.getElementById('statistics-section'),
+      statisticsContent: document.getElementById('statistics-content')
     };
 
     // Bind event listeners
@@ -76,7 +81,14 @@ const App = (function() {
       checkbox.addEventListener('change', handleToggleChange);
     });
 
-    // Update current time indicator every minute
+    // Listen for system dark mode changes to re-render heatmap
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (state.heatmapData) {
+        renderHeatmap();
+      }
+    });
+
+    // Update current time indicator and predictions every minute
     setInterval(updateCurrentTimeIndicator, 60000);
   }
 
@@ -300,6 +312,7 @@ const App = (function() {
     const activityType = toggleItem.dataset.activity;
     state.visibility[activityType] = event.target.checked;
     renderHeatmap();
+    updatePredictions();
   }
 
   /**
@@ -468,6 +481,8 @@ const App = (function() {
     updateDataSummary();
     updateToggleCounts();
     renderHeatmap();
+    updatePredictions();
+    updateStatistics();
   }
 
   /**
@@ -526,6 +541,8 @@ const App = (function() {
     if (show) {
       elements.dateFilterSection.classList.remove('hidden');
       elements.togglesSection.classList.remove('hidden');
+      elements.predictionSection.classList.remove('hidden');
+      elements.statisticsSection.classList.remove('hidden');
       elements.heatmapSection.classList.remove('hidden');
       if (elements.gettingStarted) {
         elements.gettingStarted.classList.add('hidden');
@@ -534,9 +551,13 @@ const App = (function() {
         elements.privacyNotice.classList.add('hidden');
       }
       elements.loadExampleBtn.disabled = true;
+      updatePredictions();
+      updateStatistics();
     } else {
       elements.dateFilterSection.classList.add('hidden');
       elements.togglesSection.classList.add('hidden');
+      elements.predictionSection.classList.add('hidden');
+      elements.statisticsSection.classList.add('hidden');
       elements.heatmapSection.classList.add('hidden');
       if (elements.gettingStarted) {
         elements.gettingStarted.classList.remove('hidden');
@@ -696,7 +717,222 @@ const App = (function() {
   function updateCurrentTimeIndicator() {
     if (state.heatmapData) {
       renderHeatmap();
+      updatePredictions();
     }
+  }
+
+  /**
+   * Update the predictions panel with current time data
+   */
+  function updatePredictions() {
+    if (!state.heatmapData || !elements.predictionContent) return;
+
+    const currentMinutes = Heatmap.getCurrentMinutes();
+    const timeStr = Heatmap.minutesToTimeString(currentMinutes);
+    elements.predictionTime.textContent = timeStr;
+
+    const { heatmaps } = state.heatmapData;
+
+    // Get predictions for visible activities
+    const predictions = Object.keys(heatmaps)
+      .filter(type => state.visibility[type])
+      .map(type => ({
+        type,
+        name: heatmaps[type].name,
+        color: heatmaps[type].color,
+        // Use raw intensity (actual probability) instead of normalized
+        intensity: heatmaps[type].rawIntensities ? heatmaps[type].rawIntensities[currentMinutes] : heatmaps[type].intensities[currentMinutes]
+      }))
+      .filter(p => p.intensity > 0)
+      .sort((a, b) => b.intensity - a.intensity);
+
+    if (predictions.length === 0) {
+      elements.predictionContent.innerHTML = '<div class="prediction-empty">No predicted activities at this time</div>';
+      return;
+    }
+
+    elements.predictionContent.innerHTML = predictions.map(p => `
+      <div class="prediction-item">
+        <div class="prediction-color" style="background-color: ${p.color};"></div>
+        <span class="prediction-label">${p.name}</span>
+        <div class="prediction-bar-container">
+          <div class="prediction-bar" style="width: ${p.intensity * 100}%; background-color: ${p.color};"></div>
+        </div>
+        <span class="prediction-percentage">${Math.round(p.intensity * 100)}%</span>
+      </div>
+    `).join('');
+  }
+
+  /**
+   * Calculate and display statistics
+   */
+  function updateStatistics() {
+    if (!elements.statisticsContent) return;
+
+    const filteredActivities = getFilteredActivities();
+    const statsHtml = [];
+
+    // Sleep statistics
+    if (filteredActivities.sleep.length > 0) {
+      const sleepStats = calculateSleepStats(filteredActivities.sleep);
+      statsHtml.push(createStatCard('Sleep', Heatmap.ACTIVITY_COLORS.sleep, [
+        { label: 'Total sessions', value: sleepStats.totalSessions },
+        { label: 'Avg duration', value: formatDuration(sleepStats.avgDuration) },
+        { label: 'Per day', value: sleepStats.perDay.toFixed(1) }
+      ]));
+    }
+
+    // Nursing statistics
+    if (filteredActivities.nursing.length > 0) {
+      const nursingStats = calculateNursingStats(filteredActivities.nursing);
+      statsHtml.push(createStatCard('Nursing', Heatmap.ACTIVITY_COLORS.nursing, [
+        { label: 'Total sessions', value: nursingStats.totalSessions },
+        { label: 'Avg duration', value: formatDuration(nursingStats.avgDuration) },
+        { label: 'Per day', value: nursingStats.perDay.toFixed(1) }
+      ]));
+    }
+
+    // Pumping statistics
+    if (filteredActivities.pumping.length > 0) {
+      const pumpingStats = calculatePumpingStats(filteredActivities.pumping);
+      statsHtml.push(createStatCard('Pumping', Heatmap.ACTIVITY_COLORS.pumping, [
+        { label: 'Total sessions', value: pumpingStats.totalSessions },
+        { label: 'Avg duration', value: formatDuration(pumpingStats.avgDuration) },
+        { label: 'Avg amount', value: pumpingStats.avgAmount > 0 ? `${pumpingStats.avgAmount.toFixed(1)} oz` : 'N/A' }
+      ]));
+    }
+
+    // Bottle statistics
+    if (filteredActivities.bottle.length > 0) {
+      const bottleStats = calculateBottleStats(filteredActivities.bottle);
+      statsHtml.push(createStatCard('Bottle', Heatmap.ACTIVITY_COLORS.bottle, [
+        { label: 'Total feedings', value: bottleStats.totalFeedings },
+        { label: 'Avg amount', value: bottleStats.avgAmount > 0 ? `${bottleStats.avgAmount.toFixed(1)} oz` : 'N/A' },
+        { label: 'Per day', value: bottleStats.perDay.toFixed(1) }
+      ]));
+    }
+
+    // Diaper statistics
+    if (filteredActivities.diaper.length > 0) {
+      const diaperStats = calculateDiaperStats(filteredActivities.diaper);
+      statsHtml.push(createStatCard('Diaper', Heatmap.ACTIVITY_COLORS.diaper, [
+        { label: 'Total changes', value: diaperStats.totalChanges },
+        { label: 'Per day', value: diaperStats.perDay.toFixed(1) }
+      ]));
+    }
+
+    elements.statisticsContent.innerHTML = statsHtml.join('');
+  }
+
+  /**
+   * Create a statistics card HTML
+   */
+  function createStatCard(title, color, items) {
+    const itemsHtml = items.map(item => `
+      <div class="stat-item">
+        <span class="stat-label">${item.label}</span>
+        <span class="stat-value">${item.value}</span>
+      </div>
+    `).join('');
+
+    return `
+      <div class="stat-card" style="border-left-color: ${color};">
+        <div class="stat-card-header">
+          <div class="stat-color" style="background-color: ${color};"></div>
+          <span class="stat-title">${title}</span>
+        </div>
+        <div class="stat-items">${itemsHtml}</div>
+      </div>
+    `;
+  }
+
+  /**
+   * Calculate sleep statistics
+   */
+  function calculateSleepStats(activities) {
+    const totalDuration = activities.reduce((sum, a) => sum + a.durationMinutes, 0);
+    const uniqueDays = new Set(activities.map(a => getDateStr(a.start))).size;
+
+    return {
+      totalSessions: activities.length,
+      avgDuration: activities.length > 0 ? totalDuration / activities.length : 0,
+      perDay: uniqueDays > 0 ? activities.length / uniqueDays : 0
+    };
+  }
+
+  /**
+   * Calculate nursing statistics
+   */
+  function calculateNursingStats(activities) {
+    const totalDuration = activities.reduce((sum, a) => sum + a.durationMinutes, 0);
+    const uniqueDays = new Set(activities.map(a => getDateStr(a.start))).size;
+
+    return {
+      totalSessions: activities.length,
+      avgDuration: activities.length > 0 ? totalDuration / activities.length : 0,
+      perDay: uniqueDays > 0 ? activities.length / uniqueDays : 0
+    };
+  }
+
+  /**
+   * Calculate pumping statistics
+   */
+  function calculatePumpingStats(activities) {
+    const totalDuration = activities.reduce((sum, a) => sum + a.durationMinutes, 0);
+    const totalAmount = activities.reduce((sum, a) => sum + (a.totalAmount || 0), 0);
+    const activitiesWithAmount = activities.filter(a => a.totalAmount > 0);
+
+    return {
+      totalSessions: activities.length,
+      avgDuration: activities.length > 0 ? totalDuration / activities.length : 0,
+      avgAmount: activitiesWithAmount.length > 0 ? totalAmount / activitiesWithAmount.length : 0
+    };
+  }
+
+  /**
+   * Calculate bottle statistics
+   */
+  function calculateBottleStats(activities) {
+    const totalAmount = activities.reduce((sum, a) => sum + (a.amount || 0), 0);
+    const activitiesWithAmount = activities.filter(a => a.amount > 0);
+    const uniqueDays = new Set(activities.map(a => getDateStr(a.time))).size;
+
+    return {
+      totalFeedings: activities.length,
+      avgAmount: activitiesWithAmount.length > 0 ? totalAmount / activitiesWithAmount.length : 0,
+      perDay: uniqueDays > 0 ? activities.length / uniqueDays : 0
+    };
+  }
+
+  /**
+   * Calculate diaper statistics
+   */
+  function calculateDiaperStats(activities) {
+    const uniqueDays = new Set(activities.map(a => getDateStr(a.time))).size;
+
+    return {
+      totalChanges: activities.length,
+      perDay: uniqueDays > 0 ? activities.length / uniqueDays : 0
+    };
+  }
+
+  /**
+   * Get date string from Date object
+   */
+  function getDateStr(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  /**
+   * Format duration in minutes to readable string
+   */
+  function formatDuration(minutes) {
+    if (minutes < 60) {
+      return `${Math.round(minutes)} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   }
 
   /**
