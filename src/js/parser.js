@@ -205,10 +205,12 @@ const Parser = (function() {
 
       Papa.parse(file, {
         header: true,
-        skipEmptyLines: true,
+        skipEmptyLines: 'greedy', // Skip lines that are empty or contain only whitespace
         complete: (results) => {
-          if (results.errors.length > 0) {
-            console.warn(`Parse warnings for ${file.name}:`, results.errors);
+          // Filter out "TooFewFields" errors - these occur when optional Note column is missing
+          const significantErrors = results.errors.filter(e => e.code !== 'TooFewFields');
+          if (significantErrors.length > 0) {
+            console.warn(`Parse warnings for ${file.name}:`, significantErrors);
           }
 
           let activities = [];
@@ -271,11 +273,13 @@ const Parser = (function() {
 
     const results = Papa.parse(csvText, {
       header: true,
-      skipEmptyLines: true
+      skipEmptyLines: 'greedy' // Skip lines that are empty or contain only whitespace
     });
 
-    if (results.errors.length > 0) {
-      console.warn(`Parse warnings for ${filename}:`, results.errors);
+    // Filter out "TooFewFields" errors - these occur when optional Note column is missing
+    const significantErrors = results.errors.filter(e => e.code !== 'TooFewFields');
+    if (significantErrors.length > 0) {
+      console.warn(`Parse warnings for ${filename}:`, significantErrors);
     }
 
     let activities = [];
