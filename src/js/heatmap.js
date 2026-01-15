@@ -169,10 +169,23 @@ const Heatmap = (function() {
 
     for (const type in heatmaps) {
       const data = heatmaps[type];
-      // Convert minuteDays (array of Sets) to intensities (array of numbers)
-      data.intensities = data.minuteDays.map(days =>
-        totalDays > 0 ? Math.min(1, days.size / totalDays) : 0
+      // Convert minuteDays (array of Sets) to raw intensities
+      const rawIntensities = data.minuteDays.map(days =>
+        totalDays > 0 ? days.size / totalDays : 0
       );
+
+      // Find the maximum intensity for this activity type
+      const maxIntensity = Math.max(...rawIntensities);
+
+      // Normalize intensities so the max becomes 1.0 (100%)
+      data.intensities = rawIntensities.map(intensity =>
+        maxIntensity > 0 ? intensity / maxIntensity : 0
+      );
+
+      // Store raw max for tooltip display (actual probability)
+      data.maxRawIntensity = maxIntensity;
+      data.rawIntensities = rawIntensities;
+
       data.color = ACTIVITY_COLORS[type];
       data.name = ACTIVITY_NAMES[type];
     }
